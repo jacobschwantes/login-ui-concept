@@ -3,6 +3,7 @@ import Spinner from "../components/Spinner";
 import { Dispatch, SetStateAction, useState, useEffect } from "react";
 import { EyeIcon, EyeOffIcon, UserIcon } from "@heroicons/react/solid";
 import Router from "next/router";
+import { signIn } from "next-auth/react";
 
 type Tab = {
   heading: string;
@@ -43,25 +44,45 @@ const PasswordPage: NextComponentType<
 
   const submitLogin = async (email: string, password: string) => {
     setLoading(true);
-    await fetch(`/api/authenticate/login`, {
-      method: "POST",
-      body: JSON.stringify({
-        email,
-        password,
-      }),
+    const login = await signIn("credentials", {
+      email,
+      password,
+      callbackUrl: `/authenticated`,
+      redirect: false,
     })
-      .then(async (res) => {
-        if (res.ok) {
-          setAuthenticated(true);
-          return res;
-        } else {
-          let text = await res.text();
+      .then((res) => {
+        if (res?.error) {
+          let text = res?.error;
           throw new Error(text);
+        } else {
+          Router.push('/authenticated')
         }
       })
       .catch((e) => {
         setError(e.message);
       });
+
+    //   await fetch(`/api/authenticate/login`, {
+    //     method: "POST",
+    //     body: JSON.stringify({
+    //       email,
+    //       password,
+    //     }),
+    //   })
+    //     .then(async (res) => {
+    //       if (res.ok) {
+    //         setAuthenticated(true);
+    //         return res;
+    //       } else {
+    //         let text = await res.text();
+    //         throw new Error(text);
+    //       }
+    //     })
+    //     .catch((e) => {
+    //       setError(e.message);
+    //     });
+    //   setLoading(false);
+    // };
     setLoading(false);
   };
   return (
@@ -81,7 +102,7 @@ const PasswordPage: NextComponentType<
       <button
         type="button"
         onClick={() => setEmailValidated(false)}
-        className="p-4 font-bold rounded-lg focus:outline-none bg-black active:scale-[.98] hover:brightness-150 active:bg-zinc-900  border-gray-800 border flex items-center space-x-3 text-white "
+        className="p-4 font-bold rounded-lg focus:outline-none bg-black active:scale-[.98] active:bg-zinc-900  border-gray-800 border flex items-center space-x-3 text-white "
       >
         <UserIcon className="h-7 border-2 rounded-full p-0.5 text-gray-400" />
         <p className="truncate">{email}</p>
@@ -225,7 +246,7 @@ const LoginCard: NextComponentType<NextPageContext, {}, LoginCardProps> = ({
   const [emailValidated, setEmailValidated] = useState(false);
 
   return (
-    <div className="border border-gray-800 rounded-2xl p-10 w-1/3 space-y-5">
+    <div className="border border-gray-800 rounded-2xl p-10 max-w-lg w-full space-y-5">
       <h1 className="text-gray-100 text-3xl font-medium mb-12">coinbase</h1>
       {emailValidated ? (
         <PasswordPage
